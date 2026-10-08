@@ -31,7 +31,7 @@ export const initialData = {
     address: 'Unit 402, Emerald Terraces, Ortigas Center, Pasig City',
     isFirstLogin: false,
     mustChangePassword: false,
-    isAuthenticated: true
+    isAuthenticated: false
   },
   
   leaveCredits: {

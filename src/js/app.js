@@ -26,57 +26,125 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ========================================================
    1. AUTHENTICATION & LOGIN FLOW (Sections 4.1, 4.2 & 4.3)
    ======================================================== */
+/* ========================================================
+   1. AUTHENTICATION & LOGIN FLOW (Sci-Fi Holographic Theme)
+   ======================================================== */
 function initAuthFlow() {
   const authContainer = document.getElementById('authContainer');
   const appContainer = document.getElementById('appContainer');
 
-  const tabLoginBtn = document.getElementById('tabLoginBtn');
-  const tabActivateBtn = document.getElementById('tabActivateBtn');
-  const tabFirstLoginBtn = document.getElementById('tabFirstLoginBtn');
+  const authCenterCard = document.getElementById('authCenterCard');
+  const authRightPanel = document.getElementById('authRightPanel');
+  const authChangePwdModal = document.getElementById('authChangePwdModal');
 
-  const loginForm = document.getElementById('loginForm');
+  // Mode buttons
+  const btnSwitchToCenterCard = document.getElementById('btnSwitchToCenterCard');
+  const btnSwitchToRightSidebar = document.getElementById('btnSwitchToRightSidebar');
+
+  // Side tab buttons
+  const tabRightLoginBtn = document.getElementById('tabRightLoginBtn');
+  const tabRightActivateBtn = document.getElementById('tabRightActivateBtn');
+  const tabRightChangePwdBtn = document.getElementById('tabRightChangePwdBtn');
+
+  // Forms
+  const rightLoginForm = document.getElementById('rightLoginForm');
   const activateForm = document.getElementById('activateForm');
   const firstLoginForm = document.getElementById('firstLoginForm');
+  const centerLoginForm = document.getElementById('centerLoginForm');
+  const changePwdAuthModalForm = document.getElementById('changePwdAuthModalForm');
 
-  // Check auth state
+  // Check initial authentication
   if (appState.currentUser.isAuthenticated) {
     authContainer.style.display = 'none';
     appContainer.style.display = 'flex';
   } else {
     authContainer.style.display = 'flex';
     appContainer.style.display = 'none';
+    // Default to the right side drawer view as shown in primary screens
+    showSideLayout();
   }
 
-  // Auth Tab Switchers
-  function switchAuthTab(activeBtn, activeForm) {
-    [tabLoginBtn, tabActivateBtn, tabFirstLoginBtn].forEach(btn => btn.classList.remove('active'));
-    [loginForm, activateForm, firstLoginForm].forEach(form => form.style.display = 'none');
-    
-    activeBtn.classList.add('active');
-    activeForm.style.display = 'block';
+  function showCenterLayout() {
+    if (authRightPanel) authRightPanel.style.display = 'none';
+    if (authCenterCard) authCenterCard.style.display = 'block';
+    if (authChangePwdModal) authChangePwdModal.style.display = 'none';
   }
 
-  tabLoginBtn?.addEventListener('click', () => switchAuthTab(tabLoginBtn, loginForm));
-  tabActivateBtn?.addEventListener('click', () => switchAuthTab(tabActivateBtn, activateForm));
-  tabFirstLoginBtn?.addEventListener('click', () => switchAuthTab(tabFirstLoginBtn, firstLoginForm));
+  function showSideLayout() {
+    if (authCenterCard) authCenterCard.style.display = 'none';
+    if (authRightPanel) authRightPanel.style.display = 'flex';
+    if (authChangePwdModal) authChangePwdModal.style.display = 'none';
+  }
 
-  // 4.1 & 4.2: Login Submit & Validation
-  loginForm?.addEventListener('submit', (e) => {
+  function showChangePwdModal() {
+    if (authChangePwdModal) authChangePwdModal.style.display = 'block';
+    if (authCenterCard) authCenterCard.style.display = 'none';
+    if (authRightPanel) authRightPanel.style.display = 'none';
+  }
+
+  // Layout mode toggles
+  btnSwitchToCenterCard?.addEventListener('click', showCenterLayout);
+  btnSwitchToRightSidebar?.addEventListener('click', showSideLayout);
+
+  // Side Tab switchers
+  function switchSideTab(activeBtn, targetForm) {
+    [tabRightLoginBtn, tabRightActivateBtn, tabRightChangePwdBtn].forEach(b => b?.classList.remove('active'));
+    [rightLoginForm, activateForm, firstLoginForm].forEach(f => {
+      if (f) f.style.display = 'none';
+    });
+
+    activeBtn?.classList.add('active');
+    if (targetForm) targetForm.style.display = 'block';
+  }
+
+  tabRightLoginBtn?.addEventListener('click', () => switchSideTab(tabRightLoginBtn, rightLoginForm));
+  tabRightActivateBtn?.addEventListener('click', () => switchSideTab(tabRightActivateBtn, activateForm));
+  tabRightChangePwdBtn?.addEventListener('click', () => {
+    // Open the Change Password Floating Dialog (Screenshot 5)
+    showChangePwdModal();
+  });
+
+  // Password visibility eye toggles
+  document.querySelectorAll('.side-input-eye-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-toggle-for');
+      const input = document.getElementById(targetId);
+      const eyeOpen = btn.querySelector('.eye-open');
+      const eyeClosed = btn.querySelector('.eye-closed');
+
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (eyeOpen) eyeOpen.style.display = 'none';
+        if (eyeClosed) eyeClosed.style.display = 'block';
+      } else {
+        input.type = 'password';
+        if (eyeOpen) eyeOpen.style.display = 'block';
+        if (eyeClosed) eyeClosed.style.display = 'none';
+      }
+    });
+  });
+
+  // 1. Right Login Form Submission (Screenshot 4)
+  rightLoginForm?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
+    const identifier = document.getElementById('loginEmail')?.value.trim() || '';
+    const password = document.getElementById('loginPassword')?.value.trim() || '';
     const validationAlert = document.getElementById('loginValidationAlert');
 
-    // Validation rule (Section 4.2)
-    if (!email || !email.includes('@') || !password) {
-      validationAlert.style.display = 'block';
-      showToast('Validation Failed: Please enter email and password.', 'error');
+    if (!identifier || !password) {
+      if (validationAlert) validationAlert.style.display = 'block';
+      showToast('Validation Failed: Please enter username/email and password.', 'error');
       return;
     }
 
-    // Check against current user
-    if (email.toLowerCase() === appState.currentUser.email.toLowerCase() || email === 'admin@emperio.corp') {
-      validationAlert.style.display = 'none';
+    const matchesUser = identifier.toLowerCase() === appState.currentUser.email.toLowerCase() ||
+                        identifier.toLowerCase() === appState.currentUser.username.toLowerCase() ||
+                        identifier.toUpperCase() === appState.currentUser.employeeId.toUpperCase() ||
+                        identifier === 'admin@emperio.corp';
+
+    if (matchesUser) {
+      if (validationAlert) validationAlert.style.display = 'none';
       appState.currentUser.isAuthenticated = true;
       saveState(appState);
 
@@ -85,49 +153,71 @@ function initAuthFlow() {
       appContainer.style.display = 'flex';
       renderAllViews();
     } else {
-      validationAlert.style.display = 'block';
+      if (validationAlert) validationAlert.style.display = 'block';
       showToast('Authentication failed: Invalid credentials.', 'error');
     }
   });
 
-  // Demo Quick-Fill
-  document.getElementById('btnQuickDemoLogin')?.addEventListener('click', () => {
-    document.getElementById('loginEmail').value = appState.currentUser.email;
-    document.getElementById('loginPassword').value = 'Emp@Charles2026!';
-    loginForm.dispatchEvent(new Event('submit'));
+  // 2. Center Card Login Form Submission (Screenshot 2)
+  centerLoginForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const empId = document.getElementById('centerEmpId')?.value.trim() || '';
+    const password = document.getElementById('centerPassword')?.value.trim() || '';
+    const centerAlert = document.getElementById('centerValidationAlert');
+
+    if (!empId || !password) {
+      if (centerAlert) centerAlert.style.display = 'block';
+      showToast('Please enter both Employee ID and password.', 'error');
+      return;
+    }
+
+    const matches = empId.toUpperCase() === appState.currentUser.employeeId.toUpperCase() ||
+                    empId.toLowerCase() === appState.currentUser.email.toLowerCase() ||
+                    empId.toLowerCase() === appState.currentUser.username.toLowerCase();
+
+    if (matches) {
+      if (centerAlert) centerAlert.style.display = 'none';
+      appState.currentUser.isAuthenticated = true;
+      saveState(appState);
+
+      showToast(`Welcome back, ${appState.currentUser.fullName}!`, 'success');
+      authContainer.style.display = 'none';
+      appContainer.style.display = 'flex';
+      renderAllViews();
+    } else {
+      if (centerAlert) centerAlert.style.display = 'block';
+      showToast('Authentication failed: Invalid credentials.', 'error');
+    }
   });
 
-  // Feature 1: Account Activation
+  // 3. Account Activation Form (Screenshot 3)
   activateForm?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const empId = document.getElementById('activateEmpId').value.trim();
-    const email = document.getElementById('activateEmail').value.trim();
+    const empId = document.getElementById('activateEmpId')?.value.trim();
+    const email = document.getElementById('activateEmail')?.value.trim();
 
     if (!empId || !email) {
       showToast('Please provide both Employee ID and registered company email.', 'error');
       return;
     }
 
-    // Simulate account activation & default password dispatch
-    showToast(`Account ${empId} activated! Default password sent to ${email}.`, 'success');
-    switchAuthTab(tabFirstLoginBtn, firstLoginForm);
-    document.getElementById('firstExistingPwd').value = 'DefaultEmp@2026';
-    document.getElementById('firstNewUsername').value = email.split('@')[0];
+    showToast(`Account ${empId} activated! Opening credential change...`, 'success');
+    showChangePwdModal();
   });
 
-  // Feature 3: First Login Credential Setup
-  firstLoginForm?.addEventListener('submit', (e) => {
+  // Back to login link in activate screen
+  document.getElementById('linkBackToLogin')?.addEventListener('click', (e) => {
     e.preventDefault();
-    const existing = document.getElementById('firstExistingPwd').value.trim();
-    const newUsername = document.getElementById('firstNewUsername').value.trim();
-    const newPwd = document.getElementById('firstNewPwd').value.trim();
-    const confirmPwd = document.getElementById('firstConfirmPwd').value.trim();
+    switchSideTab(tabRightLoginBtn, rightLoginForm);
+  });
 
-    if (!existing) {
-      showToast('Please enter your existing default password.', 'error');
-      return;
-    }
-    if (newPwd.length < 8) {
+  // 4. Modal Password Change (Screenshot 5)
+  changePwdAuthModalForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const newPwd = document.getElementById('modalNewPassword')?.value.trim();
+    const confirmPwd = document.getElementById('modalConfirmPassword')?.value.trim();
+
+    if (!newPwd || newPwd.length < 8) {
       showToast('New password must be at least 8 characters.', 'error');
       return;
     }
@@ -136,23 +226,37 @@ function initAuthFlow() {
       return;
     }
 
-    // Save updated credentials
-    appState.currentUser.username = newUsername || appState.currentUser.username;
+    showToast('Password updated successfully! Welcome to your dashboard.', 'success');
     appState.currentUser.isAuthenticated = true;
-    appState.currentUser.isFirstLogin = false;
     saveState(appState);
-
-    showToast('First-time setup completed! Account credentials updated.', 'success');
     authContainer.style.display = 'none';
     appContainer.style.display = 'flex';
     renderAllViews();
   });
 
-  // Forgot password shortcut
-  document.getElementById('linkForgotPassword')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    showToast('Password reset link sent to registered email address.', 'info');
+  document.getElementById('btnModalCancelPwd')?.addEventListener('click', () => {
+    showSideLayout();
+    switchSideTab(tabRightLoginBtn, rightLoginForm);
   });
+
+  // 5. First Login Credential Form
+  firstLoginForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    appState.currentUser.isAuthenticated = true;
+    saveState(appState);
+    showToast('Credentials updated!', 'success');
+    authContainer.style.display = 'none';
+    appContainer.style.display = 'flex';
+    renderAllViews();
+  });
+
+  // Forgot password triggers
+  const forgotHandler = (e) => {
+    e.preventDefault();
+    showToast('Password reset instructions dispatched to IT Support & email.', 'info');
+  };
+  document.getElementById('linkCenterForgot')?.addEventListener('click', forgotHandler);
+  document.getElementById('linkRightForgot')?.addEventListener('click', forgotHandler);
 }
 
 /* ========================================================
